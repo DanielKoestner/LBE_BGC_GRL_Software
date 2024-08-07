@@ -1,0 +1,64 @@
+#######################################################################################################3
+## This directory contains 4 scripts. ##
+
+# i. Lofoten.m: A "tutorial" file for downloading and processing
+# BGC-ARGO data. Requires OneArgo matlab package which is already
+# part of the repository if you pulled these scripts through git
+
+# ii. process_BGCARGO_BBP_CHL.m: A function to associate BBP700/CHLA from BGC-ARGO
+# with small and large particles. Requires a .mat file in the directory "matfiles"
+# that contains  two data structures: one for BBP700 and one for Chl. 
+# The function requires the name of a matfile and the name of the two datastructures in the matfile
+# The function was tested using the "qc_filter" function from the OneArgo package (the code can
+# be found in Lofoten.m). The structures needed to be separated because we only want
+# to use qc 1,2, or 8 data for CHLA but raw data for BBP700 (BBP700 is generally not qc'd).
+# The structures can actually have any data so long as they have 
+# a. "CHLA_ADJUSTED" (just the Chl data structure).
+# b. "BBP700" (just the BBP data structure).
+# c. "PRES_ADJUSTED" (just the BBP data structure).
+
+# iii. extract_aseanoise.m: A function to extract anually varying background noise from 
+# BGC-ARGO BBP700/CHLA measurements obtained for a specific season (Dec-Feb,Mar-May,June-Aug,or Sep-Nov).
+# Called by process_BGCARGO_BBP_CHL.m.
+
+# iv.  extract_annoise.m: A function to extract anually varying background noise from
+# all BGC-ARGO BBP700/CHLA measurements (not just from data for a specific season as above). Called by process_BGCARGO_BBP_CHL.m.
+
+# v.   extract_monnoise.m: A function to extract monthly varying background noise from
+# all BGC-ARGO BBP700/CHLA measurements. Called by process_BGCARGO_BBP_CHL.m.
+
+# vi.  Koest23_modelB_700.m: Script for converting BBP700/chla to POC by Daniel Koestner
+
+# vii. Koest23_Lofoten_Map_POC.m/Koest23_Lofoten_Map_bs_bl.m: scripts to visualizing 
+# small (bs) and large (bl) particle-associated BBP700 and Chla (Koest23_Lofoten_Map_bs_bl.m), as well as small and large
+# POC (Koest23_Lofoten_Map_POC.m). For the latter, also calls Koest23_modelB_700.m to convert
+# BBP700/Chla to POC. 
+
+# viii.plot_bbp_chl_avg.m: A script to visualize float-average BBP700 and Chla estimates in
+# small (bs) and large (bl) particles. Also for visualizing the mean, min, and maximum noise estiamtes
+# for each of these variables.
+
+# viv.RTQC_BGCARGO_BBP.m : A function for processing BBP700 following the protoca; of Dal'Ollmo et al., 2022, Open Research Europe
+# Requries a .mat file in a specified path that contains at data structure for BBP700, which include BBP700 itself and the array
+# BBP700_QC (QC flags obtained from float data). The script will replace the QC flags in BBP700_QC with those from the Dal'Ollmo 
+# QC tests.
+
+# viv.RTQC_BGCARGO_BBP_nc.m : Same as RTQC_BGCARGO_BBP.m, but takes as input a list of floast, the path to the
+# netcdf files containing the float profile data, and the path to the netcdf files containing the float metadata.
+# BBP700_QC (QC flags obtained from float data). The script will replace the QC flags in BBP700_QC 
+# in the netcdf files with those from the Dal'Ollmo QC tests, and also output a structure with
+# these QC values, the orignal BBP700 data, the associated PRES, time, lat, lon, and an array
+# the specifies which tests failed for each profile.
+
+# x: process_BGCARGO_BBP_CHL_drv.m: a script that will take .matfiles containing data structures for
+# BBP700 and chl-a, apply the viv.RTQC_BGCARGO_BBP function to BBP700, and then apply the process_BGCARGO_BBP_CHL
+# function to produce small and large BBP700 and chl-a. The chl-a data structure just requires pressure
+# and chl-a, while the BBP700 data structure requires BBP700, BBP700_QC, and pressure fields.
+
+# xi: process_BGCARGO_BBP_CHL_drv_nc.m: same as process_BGCARGO_BBP_CHL_drv.m, but instead
+# uses a input netcdf files for BBP700 (currently does not use chl-a), and applys the function
+# viv.RTQC_BGCARGO_BBP_nc. Returns the BBP700 structure just like process_BGCARGO_BBP_CHL_drv.m,
+# but also modfied BBP700_QC array of the netcdf files in the "profiles" directory 
+#######################################################################################################3
+
+
