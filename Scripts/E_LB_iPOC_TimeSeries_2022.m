@@ -16,7 +16,9 @@ addpath(genpath([curdir '/Data']))
 addpath(genpath([curdir '/aux']))
 
 print_flag=0;
-save_flag=0;
+save_flag=1;
+scale_flag='A'; % A for 1.5r and B for 2r scaling of LBEZ
+
 fs=15;
 lw=1.5;
 set(0, 'DefaultAxesFontName', 'Times');
@@ -54,11 +56,15 @@ colorsm=[c(9:12,:); c(1:8,:)];
 warning off
 %% load data
 
-load('LBE_BGC_POC_2010_2022_07-Jun-2024')
+% load('LBE_BGC_POC_2010_2022_07-Jun-2024')
+load(['LBE_BGC_POC_2010_2022_' scale_flag '_06-Feb-2025'])
+load(['LBE_BGC_POC_2010_2022_MonthlyProfiles_' scale_flag '_06-Feb-2025'],'zPROD_in','zPROD_out')
 
+% 
 poclims=[1 200];
 
-thrs=0.80; %if over 80% values in profile are nan, exclude
+thrs=0.702; %if over 70% values in profile are nan, exclude. This means at least 60 5-m binned measurements are required
+
 %% Calculate iPOC
 % fixed depth epi (<200 m) vs meso (>200)
 % < MLD/EZD (whichever is greater) vs. > MLD/EZD
@@ -73,6 +79,9 @@ ipoc_epi=[];
 ipoc_mes=[];
 ipoc_tot=[];
 Z50=[];
+R=[];
+TH=[];
+SP=[];
 
 ipoc_eup_l=[];
 ipoc_sub_l=[];
@@ -84,7 +93,7 @@ Z50_l=[];
 
 z=-in{1}.zbin.z';
 for i = 1:length(in)
-    for ii = 1:length(in{i}.dnum);
+    for ii = 1:length(in{i}.dnum)
 
         poc=in{i}.zbin.poc_s(:,ii);
         pocl=in{i}.zbin.poc_l(:,ii);
@@ -92,16 +101,21 @@ for i = 1:length(in)
         compl=in{i}.zbin.chla_l(:,ii)./in{i}.zbin.bbp700_l(:,ii);
 
 
-        if sum(isnan(poc))<(thrs)*length(z) %if over % samples are nan
+        if sum(isnan(poc))<(thrs)*length(z) %if over % samples are nan and zero
+            %         if sum(isnan(poc))<(thrs)*length(z) %if over % samples are nan and zero
 
             days=[days; in{i}.dnum(ii)];
 
-            mld=in{i}.mld(ii);
-            ezd=in{i}.ezd(ii);
             zt=in{i}.zprod(ii);
+            if zt>900 %| isnan(zt)
+                %                 tmp=month(in{i}.dnum(ii));
+                %                 zt=zPROD_in(tmp);
+                zt=NaN;
+            end
 
-           [euphotic_poc,subeuphotic_poc,epipelagic_poc,mesopelagic_poc,total_poc,zp,slope,~] = POC_zParameters(z,poc,zt,TEzs,0,[in{i}.dnum(ii); in{i}.wmo],comp);
-           [euphotic_poc_l,subeuphotic_poc_l,epipelagic_poc_l,mesopelagic_poc_l,total_poc_l,zp_l,~,~] = POC_zParameters(z,pocl,zt,TEzs,0,[in{i}.dnum(ii); in{i}.wmo],compl);
+
+            [euphotic_poc,subeuphotic_poc,epipelagic_poc,mesopelagic_poc,total_poc,zp,slope,~] = POC_zParameters(z,poc,zt,TEzs,0,[in{i}.dnum(ii); in{i}.wmo],comp);
+            [euphotic_poc_l,subeuphotic_poc_l,epipelagic_poc_l,mesopelagic_poc_l,total_poc_l,zp_l,~,~] = POC_zParameters(z,pocl,zt,TEzs,0,[in{i}.dnum(ii); in{i}.wmo],compl);
             %store
             Z=[Z; zt];
             Z50=[Z50; zp(3)];
@@ -119,6 +133,11 @@ for i = 1:length(in)
             ipoc_mes_l=[ipoc_mes_l; mesopelagic_poc_l];
             ipoc_tot_l=[ipoc_tot_l; total_poc_l];
             Z50_l=[Z50_l; zp_l(3)];
+
+            R=[R; in{i}.relative_location(2,ii)];
+            TH=[TH; in{i}.relative_location(1,ii)];
+            SP=[SP; in{i}.lbe_speed(ii)];
+            
 
         else
         end
@@ -155,13 +174,17 @@ for i = 1:length(out)
         pocl=out{i}.zbin.poc_l(:,ii);
         comp=out{i}.zbin.chla_s(:,ii)./out{i}.zbin.bbp700_s(:,ii);
 
-        if sum(isnan(poc))<(thrs)*length(z) & sum(poc>0)>10 %if over % samples are nan or only 10 POC 
-
+        %         if sum(isnan(poc))<(thrs)*length(z) & sum(poc>0)>10 %if over % samples are nan or only 10 POC
+        if sum(isnan(poc))<(thrs)*length(z) %if over % samples are nan and zero
             days2=[days2; out{i}.dnum(ii)];
 
-            mld=out{i}.mld(ii);
-            ezd=out{i}.ezd(ii);
+
             zt=out{i}.zprod(ii);
+            if zt>900 % | isnan(zt)
+                %                 tmp=month(out{i}.dnum(ii));
+                %                 zt=zPROD_out(tmp);
+                zt=NaN;
+            end
 
 
            [euphotic_poc,subeuphotic_poc,epipelagic_poc,mesopelagic_poc,total_poc,zp,slope,~] = POC_zParameters(z,poc,zt,TEzs,0,[out{i}.dnum(ii); out{i}.wmo],comp);
@@ -263,6 +286,14 @@ for i = 1:length(mns)
     ipoc_mess(i,5)=quantile(ipoc_mes(inds),q3);
 
 
+    [~,~,Zs(i,6:7),~]=ttest(Z(inds));
+    [~,~,Z50s(i,6:7),~]=ttest(Z50(inds));
+    [~,~,ipoc_tots(i,6:7),~]=ttest(ipoc_tot(inds));
+    [~,~,ipoc_eups(i,6:7),~]=ttest(ipoc_eup(inds));
+    [~,~,ipoc_subs(i,6:7),~]=ttest(ipoc_sub(inds));
+    [~,~,ipoc_subbs(i,6:7),~]=ttest(ipoc_subb(inds));
+
+
     % start large
     Z50s_l(i,1)=nanmean(Z50_l(inds));
     ipoc_tots_l(i,1)=nanmean(ipoc_tot_l(inds));
@@ -314,24 +345,30 @@ for i = 1:length(mns)
     ipoc_epis_l(i,5)=quantile(ipoc_epi_l(inds),q3);
     ipoc_mess_l(i,5)=quantile(ipoc_mes_l(inds),q3);
 
-    % ADD SMALL + LARGE BEFORE COMPUTING STATS
-    ipoc_eupsT(i,1)=nanmean(ipoc_eup(inds)+ipoc_eup_l(inds));
-    ipoc_eupsT(i,2)=nanstd(ipoc_eup(inds)+ipoc_eup_l(inds));
-    ipoc_eupsT(i,3)=nanmedian(ipoc_eup(inds)+ipoc_eup_l(inds));
-    ipoc_eupsT(i,4)=quantile(ipoc_eup(inds)+ipoc_eup_l(inds),q1);
-    ipoc_eupsT(i,5)=quantile(ipoc_eup(inds)+ipoc_eup_l(inds),q3);
+    [~,~,Z50s_l(i,6:7),~]=ttest(Z50_l(inds));
+    [~,~,ipoc_tots_l(i,6:7),~]=ttest(ipoc_tot_l(inds));
+    [~,~,ipoc_eups_l(i,6:7),~]=ttest(ipoc_eup_l(inds));
+    [~,~,ipoc_subs_l(i,6:7),~]=ttest(ipoc_sub_l(inds));
+    [~,~,ipoc_subbs_l(i,6:7),~]=ttest(ipoc_subb_l(inds));
 
-    ipoc_subsT(i,1)=nanmean(ipoc_sub(inds)+ipoc_sub_l(inds));
-    ipoc_subsT(i,2)=nanstd(ipoc_sub(inds)+ipoc_sub_l(inds));
-    ipoc_subsT(i,3)=nanmedian(ipoc_sub(inds)+ipoc_sub_l(inds));
-    ipoc_subsT(i,4)=quantile(ipoc_sub(inds)+ipoc_sub_l(inds),q1);
-    ipoc_subsT(i,5)=quantile(ipoc_sub(inds)+ipoc_sub_l(inds),q3);
-
-    ipoc_subbsT(i,1)=nanmean(ipoc_subb(inds)+ipoc_subb_l(inds));
-    ipoc_subbsT(i,2)=nanstd(ipoc_subb(inds)+ipoc_subb_l(inds));
-    ipoc_subbsT(i,3)=nanmedian(ipoc_subb(inds)+ipoc_subb_l(inds));
-    ipoc_subbsT(i,4)=quantile(ipoc_subb(inds)+ipoc_subb_l(inds),q1);
-    ipoc_subbsT(i,5)=quantile(ipoc_subb(inds)+ipoc_subb_l(inds),q3);
+%     % ADD SMALL + LARGE BEFORE COMPUTING STATS
+%     ipoc_eupsT(i,1)=nanmean(ipoc_eup(inds)+ipoc_eup_l(inds));
+%     ipoc_eupsT(i,2)=nanstd(ipoc_eup(inds)+ipoc_eup_l(inds));
+%     ipoc_eupsT(i,3)=nanmedian(ipoc_eup(inds)+ipoc_eup_l(inds));
+%     ipoc_eupsT(i,4)=quantile(ipoc_eup(inds)+ipoc_eup_l(inds),q1);
+%     ipoc_eupsT(i,5)=quantile(ipoc_eup(inds)+ipoc_eup_l(inds),q3);
+% 
+%     ipoc_subsT(i,1)=nanmean(ipoc_sub(inds)+ipoc_sub_l(inds));
+%     ipoc_subsT(i,2)=nanstd(ipoc_sub(inds)+ipoc_sub_l(inds));
+%     ipoc_subsT(i,3)=nanmedian(ipoc_sub(inds)+ipoc_sub_l(inds));
+%     ipoc_subsT(i,4)=quantile(ipoc_sub(inds)+ipoc_sub_l(inds),q1);
+%     ipoc_subsT(i,5)=quantile(ipoc_sub(inds)+ipoc_sub_l(inds),q3);
+% 
+%     ipoc_subbsT(i,1)=nanmean(ipoc_subb(inds)+ipoc_subb_l(inds));
+%     ipoc_subbsT(i,2)=nanstd(ipoc_subb(inds)+ipoc_subb_l(inds));
+%     ipoc_subbsT(i,3)=nanmedian(ipoc_subb(inds)+ipoc_subb_l(inds));
+%     ipoc_subbsT(i,4)=quantile(ipoc_subb(inds)+ipoc_subb_l(inds),q1);
+%     ipoc_subbsT(i,5)=quantile(ipoc_subb(inds)+ipoc_subb_l(inds),q3);
 
     
     
@@ -399,6 +436,14 @@ for i = 1:length(mns)
     ipoc_epi2s(i,5)=quantile(ipoc_epi2(inds),q3);
     ipoc_mes2s(i,5)=quantile(ipoc_mes2(inds),q3);
 
+    [~,~,Z2s(i,6:7),~]=ttest(Z2(inds));
+    [~,~,Z502s(i,6:7),~]=ttest(Z502(inds));
+    [~,~,ipoc_tot2s(i,6:7),~]=ttest(ipoc_tot2(inds));
+    [~,~,ipoc_eup2s(i,6:7),~]=ttest(ipoc_eup2(inds));
+    [~,~,ipoc_sub2s(i,6:7),~]=ttest(ipoc_sub2(inds));
+    [~,~,ipoc_subb2s(i,6:7),~]=ttest(ipoc_subb2(inds));
+
+    
     % large 
     Z502s_l(i,1)=nanmean(Z502_l(inds));
     ipoc_tot2s_l(i,1)=nanmean(ipoc_tot2_l(inds));
@@ -450,24 +495,30 @@ for i = 1:length(mns)
     ipoc_epi2s_l(i,5)=quantile(ipoc_epi2_l(inds),q3);
     ipoc_mes2s_l(i,5)=quantile(ipoc_mes2_l(inds),q3);
 
-     % ADD SMALL + LARGE BEFORE COMPUTING STATS
-    ipoc_eup2sT(i,1)=nanmean(ipoc_eup2(inds)+ipoc_eup2_l(inds));
-    ipoc_eup2sT(i,2)=nanstd(ipoc_eup2(inds)+ipoc_eup2_l(inds));
-    ipoc_eup2sT(i,3)=nanmedian(ipoc_eup2(inds)+ipoc_eup2_l(inds));
-    ipoc_eup2sT(i,4)=quantile(ipoc_eup2(inds)+ipoc_eup2_l(inds),q1);
-    ipoc_eup2sT(i,5)=quantile(ipoc_eup2(inds)+ipoc_eup2_l(inds),q3);
+    [~,~,Z502s_l(i,6:7),~]=ttest(Z502_l(inds));
+    [~,~,ipoc_tot2s_l(i,6:7),~]=ttest(ipoc_tot2_l(inds));
+    [~,~,ipoc_eup2s_l(i,6:7),~]=ttest(ipoc_eup2_l(inds));
+    [~,~,ipoc_sub2s_l(i,6:7),~]=ttest(ipoc_sub2_l(inds));
+    [~,~,ipoc_subb2s_l(i,6:7),~]=ttest(ipoc_subb2_l(inds));
 
-    ipoc_sub2sT(i,1)=nanmean(ipoc_sub2(inds)+ipoc_sub2_l(inds));
-    ipoc_sub2sT(i,2)=nanstd(ipoc_sub2(inds)+ipoc_sub2_l(inds));
-    ipoc_sub2sT(i,3)=nanmedian(ipoc_sub2(inds)+ipoc_sub2_l(inds));
-    ipoc_sub2sT(i,4)=quantile(ipoc_sub2(inds)+ipoc_sub2_l(inds),q1);
-    ipoc_sub2sT(i,5)=quantile(ipoc_sub2(inds)+ipoc_sub2_l(inds),q3);
-
-    ipoc_subb2sT(i,1)=nanmean(ipoc_subb2(inds)+ipoc_subb2_l(inds));
-    ipoc_subb2sT(i,2)=nanstd(ipoc_subb2(inds)+ipoc_subb2_l(inds));
-    ipoc_subb2sT(i,3)=nanmedian(ipoc_subb2(inds)+ipoc_subb2_l(inds));
-    ipoc_subb2sT(i,4)=quantile(ipoc_subb2(inds)+ipoc_subb2_l(inds),q1);
-    ipoc_subb2sT(i,5)=quantile(ipoc_subb2(inds)+ipoc_subb2_l(inds),q3);
+%     % ADD SMALL + LARGE BEFORE COMPUTING STATS
+%     ipoc_eup2sT(i,1)=nanmean(ipoc_eup2(inds)+ipoc_eup2_l(inds));
+%     ipoc_eup2sT(i,2)=nanstd(ipoc_eup2(inds)+ipoc_eup2_l(inds));
+%     ipoc_eup2sT(i,3)=nanmedian(ipoc_eup2(inds)+ipoc_eup2_l(inds));
+%     ipoc_eup2sT(i,4)=quantile(ipoc_eup2(inds)+ipoc_eup2_l(inds),q1);
+%     ipoc_eup2sT(i,5)=quantile(ipoc_eup2(inds)+ipoc_eup2_l(inds),q3);
+% 
+%     ipoc_sub2sT(i,1)=nanmean(ipoc_sub2(inds)+ipoc_sub2_l(inds));
+%     ipoc_sub2sT(i,2)=nanstd(ipoc_sub2(inds)+ipoc_sub2_l(inds));
+%     ipoc_sub2sT(i,3)=nanmedian(ipoc_sub2(inds)+ipoc_sub2_l(inds));
+%     ipoc_sub2sT(i,4)=quantile(ipoc_sub2(inds)+ipoc_sub2_l(inds),q1);
+%     ipoc_sub2sT(i,5)=quantile(ipoc_sub2(inds)+ipoc_sub2_l(inds),q3);
+% 
+%     ipoc_subb2sT(i,1)=nanmean(ipoc_subb2(inds)+ipoc_subb2_l(inds));
+%     ipoc_subb2sT(i,2)=nanstd(ipoc_subb2(inds)+ipoc_subb2_l(inds));
+%     ipoc_subb2sT(i,3)=nanmedian(ipoc_subb2(inds)+ipoc_subb2_l(inds));
+%     ipoc_subb2sT(i,4)=quantile(ipoc_subb2(inds)+ipoc_subb2_l(inds),q1);
+%     ipoc_subb2sT(i,5)=quantile(ipoc_subb2(inds)+ipoc_subb2_l(inds),q3);
 
     
 
@@ -1085,10 +1136,14 @@ if print_flag==1
 % print('Figures/LB22_iPOC_Vertical_Prod','-dpdf','-r800')
 
 figure(hf5)
-print('Figures/V3/4_LB22_iPOC_Monthly_Summary_Prod','-dpdf','-r800')
+print(['Figures/V8/4_LB22_iPOC_Monthly_Summary_Prod_' scale_flag],'-dpdf','-r800')
 end
 
 %% save
 if save_flag==1
-save(['Data/LBE_BGC_POC_2010_2022_MonthlyParameters_' date '_' num2str(TEzs(2))],'Z*','ipoc*','days*','months*','rat*')
+    if sf==1.5
+        save(['Data/LBE_BGC_POC_2010_2022_MonthlyParameters_A_' date '_' num2str(TEzs(2))],'sf','Z*','ipoc*','days*','months*','rat*','R','TH','SP')
+    elseif sf==2
+        save(['Data/LBE_BGC_POC_2010_2022_MonthlyParameters_B_' date '_' num2str(TEzs(2))],'sf','Z*','ipoc*','days*','months*','rat*','R','TH','SP')
+    end
 end

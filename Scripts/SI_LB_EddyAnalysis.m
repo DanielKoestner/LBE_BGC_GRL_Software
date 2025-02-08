@@ -41,7 +41,7 @@ for i = 1:length(dnums)
 % find closest eddy location date
 [~,ind]=min(abs(dnums(i)-LBE_dnum));
 
-r_lb(i)=r(ind);
+r_lb(i)=R(ind)*1.5;
 s_lb(i)=S(ind);
 clear ind
 end
@@ -60,10 +60,10 @@ xlabel('Effective Radius [km]')
 ylabel('counts')
 set(gca,'yminortick','on')
 ylim([0 150]);
-xlim([0 100]);
+xlim([20 160]);
 set(gca,'fontsize',fs-2)
 set(gca,'ticklength',[0.025 0.025])
-set(gca,'xtick',[0:25:100])
+set(gca,'xtick',[0:25:150])
 psr=histfit(r_lb);
 psr(1).FaceColor=[0.7 0.7 0.9];
 psr(2).Color=[0.3 0.3 0.3];
@@ -93,5 +93,5 @@ text(0.71,0.9,sprintf('\\sigma = %0.2f m/s',std(s_lb)),'units','normalized')
 %% print
 
 if print_flag==1
-    print('Figures/V3/SI/LB22_EddyStats','-dpdf','-r800')
+    print('Figures/V8/SI/LB22_EddyStats','-dpdf','-r800')
 end

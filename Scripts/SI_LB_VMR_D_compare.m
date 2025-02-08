@@ -14,25 +14,33 @@ addpath(genpath([curdir '/aux']))
 
 print_flag=1;
 save_flag=0;
+scale_flag='A'; % A for 1.5r and B for 2r scaling of LBEZ
+
 fs=16;
 lw=1.75;
 set(0, 'DefaultAxesFontName', 'Times');
 set(0, 'DefaultTextFontName', 'Times');
-
+thrs=0.702;
 
 %% Get data
-load('LBE_BGC_POC_2010_2022_22-Jul-2024.mat','in','out')
+% load('LBE_BGC_POC_2010_2022_22-Jul-2024.mat','in','out')
+load(['LBE_BGC_POC_2010_2022_' scale_flag '_06-Feb-2025'],'in','out')
+
 
 % note that vmr_100 is median diameter (µm) in upper 100 m for each
 % profile, under some assumptions of Qbb and volume.
 vmr_in=[];
 for i = 1:length(in)
-    vmr_in=[vmr_in in{i}.vmr_100];
+%     inds=in{i}.zprod<900;
+    inds=sum(isnan(in{i}.zbin.poc_s))<(thrs)*length(in{i}.zbin.z) & in{i}.zprod<900;
+    vmr_in=[vmr_in in{i}.vmr_100(inds)/1e6];
 end
 
 vmr_out=[];
 for i = 1:length(out)
-    vmr_out=[vmr_out out{i}.vmr_100];
+%     inds=out{i}.zprod<900;
+    inds=sum(isnan(out{i}.zbin.poc_s))<(thrs)*length(out{i}.zbin.z) & out{i}.zprod<900;
+    vmr_out=[vmr_out out{i}.vmr_100(inds)/1e6];
 end
 
 
@@ -73,8 +81,8 @@ h2.edge(2).LineStyle='none';
 
 % text(0.76,0.95,sprintf('\\mu = %1.0f km',mean(r_lb)),'units','normalized')
 % text(0.76,0.9,sprintf('\\sigma = %1.0f km',std(r_lb)),'units','normalized')
-lgd_txt{1}=sprintf('inside LBEZ, \\itN \\rm= %1.0f',length(f_in));
-lgd_txt{2}=sprintf('outside LBEZ, \\itN \\rm= %1.0f',length(f_out));
+lgd_txt{1}=sprintf('inside LBEZ, \\itN \\rm= %1.0f',length(vmr_in));
+lgd_txt{2}=sprintf('outside LBEZ, \\itN \\rm= %1.0f',length(vmr_out));
 
 
 [hl,lines]=legendflex([h.mainLine h2.mainLine],lgd_txt, 'ref', gca, ...
@@ -84,5 +92,5 @@ lgd_txt{2}=sprintf('outside LBEZ, \\itN \\rm= %1.0f',length(f_out));
 %% print
 
 if print_flag==1
-    print(['Figures/V4/SI/LB22_VMR_Compare_' date],'-dpdf','-r800')
+    print(['Figures/V8/SI/LB22_VMR_Compare_' scale_flag '_' date],'-dpdf','-r800')
 end

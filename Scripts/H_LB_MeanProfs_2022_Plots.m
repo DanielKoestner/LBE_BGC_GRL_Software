@@ -7,6 +7,7 @@
 % FLOATS ONLY
 % code only calculates and saves for plotting later
 
+% Add dotted line for EZD to all panels in time sections
 %% set up
 
 
@@ -20,8 +21,11 @@ addpath(genpath([curdir '/Data']))
 
 addpath(genpath([curdir '/aux']))
 
-print_flag=0;
+print_flag=1;
 save_flag=0;
+scale_flag='A'; % A for 1.5r and B for 2r scaling of LBEZ
+err_flag=2; %1 for std, 2 for CI
+
 fs=13;
 lw=2.3;
 set(0, 'DefaultAxesFontName', 'Times');
@@ -33,12 +37,16 @@ mksz=7;
 % month colors
 c=crameri('roma',12);
 colorsm=[c(9:12,:); c(1:8,:)];
+% [map,num] = tab20c(12);
+% colorsm=map;
 
 tletter=['abcdefgh'];
 pletter=['ijklmnop'];
 %% load data
-load('LBE_BGC_POC_2010_2022_MonthlyProfiles_07-Jun-2024.mat')
+load(['LBE_BGC_POC_2010_2022_MonthlyProfiles_' scale_flag '_06-Feb-2025'])
 
+rho_in=gsw_rho_t_exact(S_in,T_in,Z');
+rho_out=gsw_rho_t_exact(S_out,T_out,Z');
 
 tlims=[-1 12];
 olims=[260 320];
@@ -106,11 +114,21 @@ for i = 1:12
     set(gca,'yminortick','on')
     set(gca,'xminortick','on')
     set(gca,'fontsize',fs)
-    h=shadedErrorBar_x(T_in(:,i),-Z,T_in_sd(:,i),'patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    if err_flag==1
+        h=shadedErrorBar_x(T_in(:,i),-Z,T_in_sd(:,i),'patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    else
+        h=shadedErrorBar_x(T_in(:,i),-Z,[T_in_hi(:,i)-T_in(:,i) T_in(:,i)-T_in_low(:,i)]','patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    end
+
     h.edge(1).LineStyle='none';
     h.edge(2).LineStyle='none';
     xs=xlim;
+    if err_flag==1
     h2=shadedErrorBar([10 xs(2)],-[MLD_in(:,i); MLD_in(:,i)],-[MLD_in_sd(:,i); MLD_in_sd(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle','--','linewidth',lw-.2,'color',colorsm(i,:)});
+    else
+    h2=shadedErrorBar([10 xs(2)],-[MLD_in(:,i); MLD_in(:,i)],-[MLD_in_hi(:,i)-MLD_in(:,i); MLD_in(:,i)-MLD_in_low(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle','--','linewidth',lw-.2,'color',colorsm(i,:)});
+    end
+
     h2.edge(1).LineStyle='none';
     h2.edge(2).LineStyle='none';
     uistack(h.mainLine,'top')
@@ -153,11 +171,21 @@ for i = 1:12
     set(gca,'yminortick','on')
     set(gca,'xminortick','on')
     set(gca,'fontsize',fs)
-    h=shadedErrorBar_x(T_out(:,i),-Z,T_out_sd(:,i),'patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    if err_flag==1
+        h=shadedErrorBar_x(T_out(:,i),-Z,T_out_sd(:,i),'patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    else
+        h=shadedErrorBar_x(T_out(:,i),-Z,[T_out_hi(:,i)-T_out(:,i) T_out(:,i)-T_out_low(:,i)]','patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    end
+
     h.edge(1).LineStyle='none';
     h.edge(2).LineStyle='none';
     xs=xlim;
-    h2=shadedErrorBar([10 xs(2)],-[MLD_out(:,i); MLD_out(:,i)],-[MLD_out_sd(:,i); MLD_out_sd(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle','--','linewidth',lw-.2,'color',colorsm(i,:)});
+if err_flag==1
+        h2=shadedErrorBar([10 xs(2)],-[MLD_out(:,i); MLD_out(:,i)],-[MLD_out_sd(:,i); MLD_out_sd(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle','--','linewidth',lw-.2,'color',colorsm(i,:)});
+else
+        h2=shadedErrorBar([10 xs(2)],-[MLD_out(:,i); MLD_out(:,i)],-[MLD_out_hi(:,i)-MLD_out(:,i); MLD_out(:,i)-MLD_out_low(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle','--','linewidth',lw-.2,'color',colorsm(i,:)});
+end
+
     h2.edge(1).LineStyle='none';
     h2.edge(2).LineStyle='none';
     uistack(h.mainLine,'top')
@@ -231,12 +259,22 @@ for i = 1:12
     grid on
     set(gca,'yminortick','on')
     set(gca,'fontsize',fs)
+    if err_flag==1
     h=shadedErrorBar_x_log(POC_in(:,i),-Z,POC_in_sd(:,i),'patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    else
+    h=shadedErrorBar_x_poc(POC_in(:,i),-Z,[POC_in_hi(:,i)-POC_in(:,i) POC_in(:,i)-POC_in_low(:,i)]','patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    end
+    
     h.edge(1).LineStyle='none';
     h.edge(2).LineStyle='none';
     xs=xlim;
     % h2=shadedErrorBar([xs(2)*2/3 xs(2)],-[EZD_in(:,i); EZD_in(:,i)],-[EZD_in_sd(:,i); EZD_in_sd(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle',':','linewidth',lw-.2,'color',colorsm(i,:)});
+ if err_flag==1
     h2=shadedErrorBar([100 xs(2)],-[EZD_in(:,i); EZD_in(:,i)],-[EZD_in_sd(:,i); EZD_in_sd(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle',':','linewidth',lw-.2,'color',colorsm(i,:)});
+ else
+    h2=shadedErrorBar([100 xs(2)],-[EZD_in(:,i); EZD_in(:,i)],-[EZD_in_hi(:,i)-EZD_in(:,i); EZD_in(:,i)-EZD_in_low(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle',':','linewidth',lw-.2,'color',colorsm(i,:)});
+ end
+
     h2.edge(1).LineStyle='none';
     h2.edge(2).LineStyle='none';
     uistack(h.mainLine,'top')
@@ -298,12 +336,22 @@ text(0.88,0.07,'(p)','units','normalized','fontsize',fs-3);
     grid on
     set(gca,'yminortick','on')
     set(gca,'fontsize',fs)
+    if err_flag==1
     h=shadedErrorBar_x_log(POC_out(:,i),-Z,POC_out_sd(:,i),'patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    else
+    h=shadedErrorBar_x_poc(POC_out(:,i),-Z,[POC_out_hi(:,i)-POC_out(:,i) POC_out(:,i)-POC_out_low(:,i)]','patchSaturation',sat,'lineProps',{'linewidth',lw,'color',colorsm(i,:)});
+    end
+
     h.edge(1).LineStyle='none';
     h.edge(2).LineStyle='none';
     xs=xlim;
     % h2=shadedErrorBar([xs(2)*2/3 xs(2)],-[EZD_out(:,i); EZD_out(:,i)],-[EZD_out_sd(:,i); EZD_out_sd(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle',':','linewidth',lw-.2,'color',colorsm(i,:)});
+    if err_flag==1
     h2=shadedErrorBar([100 xs(2)],-[EZD_out(:,i); EZD_out(:,i)],-[EZD_out_sd(:,i); EZD_out_sd(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle',':','linewidth',lw-.2,'color',colorsm(i,:)});
+    else
+    h2=shadedErrorBar([100 xs(2)],-[EZD_out(:,i); EZD_out(:,i)],-[EZD_out_hi(:,i)-EZD_out(:,i); EZD_out(:,i)-EZD_out_low(:,i)],'patchSaturation',sat-.2,'lineProps',{'linestyle',':','linewidth',lw-.2,'color',colorsm(i,:)});
+    end
+
     h2.edge(1).LineStyle='none';
     h2.edge(2).LineStyle='none';
     uistack(h.mainLine,'top')
@@ -363,6 +411,18 @@ lgd_text={'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec
 [hl,lines]=legendflex([s],lgd_text, 'ref', gca, ...
 'anchor', {'nw', 'nw'}, 'buffer', [20 30], 'xscale', 0.5, 'ncol',6,'nrow',2, ...
 'box', 'off', 'FontSize', fs-3);
+
+axes(ha1(15));
+for i = 1:12
+        s(i)=scatter(i,i,50,colorsm(i,:),'filled');
+end
+
+
+lgd_text={'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'};
+[hl,lines]=legendflex([s],lgd_text, 'ref', gca, ...
+'anchor', {'nw', 'nw'}, 'buffer', [20 30], 'xscale', 0.5, 'ncol',6,'nrow',2, ...
+'box', 'off', 'FontSize', fs-3);
+
 %% Section plots, 3 x 1 plots for in, out, and difference
 
 % aoucols=crameri('bam',240);
@@ -373,14 +433,14 @@ lgd_text={'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec
 aoucols=crameri('bam',20);
 aoucols=(aoucols(6:end,:));
 
-deltacols=crameri('vik',16);
-cols=crameri('batlow',14);
+deltacols=crameri('vik',12);
+cols=crameri('batlow',12);
 colst=crameri('lapaz',13);
 
-sat=-0.2; %brightness scale
+sat=-0.1; %brightness scale
 aoucols=brighten(aoucols,sat);
 deltacols=brighten(deltacols,sat);
-cols=brighten(cols,0.1);
+cols=brighten(cols,0.08);
 fs=12;
 
 
@@ -415,7 +475,9 @@ text(0,1.4,'(d)','units','normalized','fontsize',fs-2)
 
 c.Ticks=log10([1 10 100]);
 c.TickLabels={'1','10','100'};
-plot3(1:12,-zPROD_in,max(log10(POC_in)),'-.','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-MLD_in,max(log10(POC_in)),'--','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-EZD_in,max(log10(POC_in)),':','linewidth',1,'color',[0.7 0.7 0.7])
+
 c.FontSize=fs-2;
 % text(1,-zPROD_in(1),'PZD','units','normalized','fontsize',fs-2,'color',[0.5 0.5 0.5])
 
@@ -446,7 +508,9 @@ text(0,1.4,'(e)','units','normalized','fontsize',fs-2)
 set(gca,'XTickLabelRotation',45)
 c.FontSize=fs-2;
 
-plot3(1:12,-zPROD_out,max(log10(POC_out)),'-.','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-MLD_out,max(log10(POC_out)),'--','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-EZD_out,max(log10(POC_out)),':','linewidth',1,'color',[0.7 0.7 0.7])
+
 axes(ha1(6))
 set(gca,'ticklength',[0.02 0.02])
 box on
@@ -463,10 +527,10 @@ s.EdgeAlpha=0.15;
 s.EdgeColor=[0.4 0.4 0.4];
 s.FaceColor='interp';
 % caxis(gca,[-25 25]);
-caxis(gca,[-20 20]);
+caxis(gca,[-18 18]);
 colormap(ha1(6),deltacols)
 c=colorbar;
-c.Ticks=-15:5:15;
+c.Ticks=-12:6:12;
 c.Location='northoutside';
 text(0.55,1.4,'\Delta POC_{\its\rm} [mg m^{-3}]','units','normalized','fontsize',fs-0.5,'fontweight','bold','horizontalalignment','center')
 text(0,1.4,'(f)','units','normalized','fontsize',fs-2)
@@ -505,6 +569,8 @@ text(0.55,1.4,'T inside [\circC]','units','normalized','fontsize',fs-0.5,'fontwe
 text(0,1.4,'(a)','units','normalized','fontsize',fs-2)
 
 plot3(1:12,-MLD_in,max(T_in),'--','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-EZD_in,max(T_in),':','linewidth',1,'color',[0.7 0.7 0.7])
+
 set(gca,'XTickLabelRotation',45)
 c.FontSize=fs-2;
 text(1,-MLD_in(1),'MLD','units','normalized','fontsize',fs-2,'color',[0.4 0.4 0.4])
@@ -532,6 +598,8 @@ text(0.55,1.4,'T outside [\circC]','units','normalized','fontsize',fs-0.5,'fontw
 text(0,1.4,'(b)','units','normalized','fontsize',fs-2)
 
 plot3(1:12,-MLD_out,max(T_out),'--','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-EZD_out,max(T_out),':','linewidth',1,'color',[0.7 0.7 0.7])
+
 set(gca,'XTickLabelRotation',45)
 c.FontSize=fs-2;
 
@@ -550,15 +618,15 @@ s.MeshStyle='column';
 s.EdgeAlpha=0.15;
 s.EdgeColor=[0.4 0.4 0.4];
 s.FaceColor='interp';
-caxis(gca,[-4 4]);
+caxis(gca,[-4.5 4.5]);
 colormap(ha1(3),deltacols)
 c=colorbar;
-c.Ticks=-3:1:3;
+c.Ticks=-3:1.5:3;
 c.Location='northoutside';
 text(0.55,1.4,'\Delta T [\circC]','units','normalized','fontsize',fs-0.5,'fontweight','bold','horizontalalignment','center')
 text(0,1.4,'(c)','units','normalized','fontsize',fs-2)
 
-plot3(1:12,-MLD_in,max(T_in-T_out),'--','linewidth',1,'color',[0.4 0.4 0.4])
+plot3(1:12,-zPROD_in,max(T_in-T_out),'-.','linewidth',1,'color',[0.4 0.4 0.4])
 c.FontSize=fs-2;
 
 set(gca,'XTickLabelRotation',45)
@@ -595,7 +663,9 @@ c.Location='northoutside';
 text(0.55,1.4,'AOU inside [\muM]','units','normalized','fontsize',fs-0.5,'fontweight','bold','horizontalalignment','center')
 text(0,1.4,'(j)','units','normalized','fontsize',fs-2)
 
-plot3(1:12,-zPROD_in,max(AOU_in),'-.','linewidth',1,'color',[0.4 0.4 0.4])
+plot3(1:12,-MLD_in,max(AOU_in),'--','linewidth',1,'color',[0.4 0.4 0.4])
+plot3(1:12,-EZD_in,max(AOU_in),':','linewidth',1,'color',[0.4 0.4 0.4])
+
 c.FontSize=fs-2;
 text(1,-zPROD_in(1),'PZD','units','normalized','fontsize',fs-2,'color',[0.5 0.5 0.5])
 
@@ -622,7 +692,9 @@ c.Location='northoutside';
 text(0.55,1.4,'AOU outside [\muM]','units','normalized','fontsize',fs-0.5,'fontweight','bold','horizontalalignment','center')
 text(0,1.4,'(k)','units','normalized','fontsize',fs-2)
 
-plot3(1:12,-zPROD_out,max(AOU_out),'-.','linewidth',1,'color',[0.4 0.4 0.4])
+plot3(1:12,-MLD_out,max(AOU_out),'--','linewidth',1,'color',[0.4 0.4 0.4])
+plot3(1:12,-EZD_out,max(AOU_out),':','linewidth',1,'color',[0.4 0.4 0.4])
+
 c.FontSize=fs-2;
 
 axes(ha1(12))
@@ -641,10 +713,10 @@ s.MeshStyle='column';
 s.EdgeAlpha=0.15;
 s.EdgeColor=[0.4 0.4 0.4];
 s.FaceColor='interp';
-caxis(gca,[-20 20]);
+caxis(gca,[-18 18]);
 colormap(ha1(12),deltacols)
 c=colorbar;
-c.Ticks=-15:5:15;
+c.Ticks=-12:6:12;
 c.Location='northoutside';
 text(0.55,1.4,'\Delta AOU [\muM]','units','normalized','fontsize',fs-0.5,'fontweight','bold','horizontalalignment','center')
 text(0,1.4,'(l)','units','normalized','fontsize',fs-2)
@@ -688,7 +760,8 @@ text(0,1.4,'(g)','units','normalized','fontsize',fs-2)
 c.FontSize=fs-2;
 text(1,-zPROD_in(1),'PZD','units','normalized','fontsize',fs-2,'color',[0.5 0.5 0.5])
 
-plot3(1:12,-zPROD_in,max(log10(POCl_in)),'-.','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-MLD_in,max(log10(POCl_in)),'--','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-EZD_in,max(log10(POCl_in)),':','linewidth',1,'color',[0.7 0.7 0.7])
 
 
 axes(ha1(8))
@@ -717,7 +790,9 @@ c.TickLabels={'1','5','50'};
 text(0.55,1.4,'POC_{\itl\rm} outside [mg m^{-3}]','units','normalized','fontsize',fs-0.5,'fontweight','bold','horizontalalignment','center')
 text(0,1.4,'(h)','units','normalized','fontsize',fs-2)
 
-plot3(1:12,-zPROD_out,max(log10(POCl_out)),'-.','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-MLD_out,max(log10(POCl_out)),'--','linewidth',1,'color',[0.7 0.7 0.7])
+plot3(1:12,-EZD_out,max(log10(POCl_out)),':','linewidth',1,'color',[0.7 0.7 0.7])
+
 c.FontSize=fs-2;
 
 
@@ -742,7 +817,7 @@ caxis(gca,[-12 12]);
 colormap(ha1(9),deltacols)
 c=colorbar;
 % c.Ticks=-15:7.5:15;
-c.Ticks=-9:3:9;
+c.Ticks=-8:4:8;
 c.Location='northoutside';
 text(0.55,1.4,'\Delta POC_{\itl\rm} [mg m^{-3}]','units','normalized','fontsize',fs-0.5,'fontweight','bold','horizontalalignment','center')
 text(0,1.4,'(i)','units','normalized','fontsize',fs-2)
@@ -752,6 +827,17 @@ c.FontSize=fs-2;
 plot3(1:12,-zPROD_in,max(POCl_in-POCl_out),'-.','linewidth',1,'color',[0.4 0.4 0.4])
 % plot3(1:12,-zPROD_in-200,max(POCl_in-POCl_out),'-','linewidth',0.2,'color',[0.4 0.4 0.4])
 
+axes(ha1(9));
+p1=plot(20:21,20:21,'--','linewidth',1,'color',[0.4 0.4 0.4]);
+p2=plot(20:21,20:21,':','linewidth',1,'color',[0.4 0.4 0.4]);
+p3=plot(20:21,20:21,'-.','linewidth',1,'color',[0.4 0.4 0.4]);
+
+% [hl,lines]=legendflex([p1 p2 p3],{'MLD','EZD','PZD'}, 'ref', gca, ...
+% 'anchor', {'nw', 'nw'}, 'buffer', [-30 68], 'xscale', 0.5, 'ncol',3,'nrow',1, ...
+% 'box', 'off', 'FontSize', fs);
+[hl,lines]=legendflex([p1 p2 p3],{'MLD','EZD','PZD'}, 'ref', gca, ...
+'anchor', {'ne', 'ne'}, 'buffer', [5 68], 'xscale', 0.5, 'ncol',3,'nrow',1, ...
+'box', 'off', 'FontSize', fs-2);
 
 for i = [1,4,7,10]
 yl=get(ha1(i),'ylabel');
@@ -1062,14 +1148,19 @@ if print_flag==1
     %     exportgraphics(hf2,['Figures/OSM24_out_MeanProfs_Temp.pdf'],'ContentType','vector');
     %     exportgraphics(hf3,['Figures/OSM24_out_MeanProfs_DOXY.pdf'],'ContentType','vector');
     %     exportgraphics(hf4,['Figures/OSM24_out_MeanProfs_Nitrate.pdf'],'ContentType','vector');
+    if err_flag==1
+        figure(hf1);
+        print(['Figures/V8/2_LB22_MonthlyProfiles_T_POCs_sd_' scale_flag],'-dpdf','-r800')
+    elseif err_flag==2
+        figure(hf1);
+        print(['Figures/V8/2_LB22_MonthlyProfiles_T_POCs_ci_' scale_flag],'-dpdf','-r800')
+    end
 
-    figure(hf1);
-    print('Figures/V4/2_LB22_MonthlyProfiles_T_POCs','-dpdf','-r800')
     figure(hf2);
-    print('Figures/V4/3_LB22_TimeSections','-dpdf','-r800')
+    print(['Figures/V8/3_LB22_TimeSections_' scale_flag],'-dpdf','-r800')
 
     figure(hf4);
-    print('Figures/LB22_TimeSections_PDif','-dpdf','-r800')
+    print(['Figures/V8/SI/LB22_TimeSections_PDif_' scale_flag],'-dpdf','-r800')
 
     % figure(hf3);
     % print('Figures/LB22_TimeSections_ttest','-dpdf','-r800')

@@ -87,25 +87,28 @@ total_poc=intpoc;
 [minp ind2]=min(poc(poc>0));
 
 
-% find sigmoid function fit 
-ind=find(depth>=mindepth&depth<maxdepth);
-[param,stat]=sigm_fit(depth(ind),poc(ind),[],[minp,maxp,depth(ind50),0.05],0);
-
-tnum=sum((poc(ind)-stat.ypred).^2);
-tdem=sum((poc(ind)-nanmean(poc(ind))).^2);
-
-R2=1-((length(stat.ypred)-1)/(length(stat.ypred)-length(param)))*(tnum/tdem);
-clear tnum tdem
-
+% % find sigmoid function fit 
+% ind=find(depth>=mindepth&depth<maxdepth);
+% [param,stat]=sigm_fit(depth(ind),poc(ind),[],[minp,maxp,depth(ind50),0.05],0);
+% 
+% tnum=sum((poc(ind)-stat.ypred).^2);
+% tdem=sum((poc(ind)-nanmean(poc(ind))).^2);
+% 
+% R2=1-((length(stat.ypred)-1)/(length(stat.ypred)-length(param)))*(tnum/tdem);
+% clear tnum tdem
+% ypred=stat.ypred;
+% slope=param(4);
+stat=NaN;
+slope=NaN;
 
 % poc integrated within various zones
 indsub=depth>=euphoticzone;
-if ~isnan(euphoticzone) & sum(indsub)>5 & sum(indsub==0)>1
+if ~isnan(euphoticzone) & sum(indsub)>9 %& sum(indsub==0)>1 % was 9 before 23 jan
     euphotic_poc=trapz(depth(depth<euphoticzone),poc(depth<euphoticzone));
     subeuphotic_poc=trapz(depth(indsub),poc(indsub));
     for i = 1:length(TEzs)
         indsub2=depth>(euphoticzone+TEzs(i));
-        if sum(indsub2)>5
+        if sum(indsub2)>4 % was 5 before 9 jan 2025, was 4 before 23 jan
             subeuphotic_poc=[subeuphotic_poc trapz(depth(indsub2),poc(indsub2))];
         else
             subeuphotic_poc=[subeuphotic_poc NaN];
@@ -128,8 +131,7 @@ mesopelagic_poc=trapz(depth(indme),poc(indme));
 % store variables
 zp=[depth(ind10) depth(ind25) depth(ind50) depth(ind75) depth(ind90)];
 
-ypred=stat.ypred;
-slope=param(4);
+
 
 pocmax=[maxp depth(ind1)];
 pocmin=[minp depth(ind2)];

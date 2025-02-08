@@ -25,8 +25,10 @@ weights=[ones(1,5) 2*ones(1,5)]; %weights for linear fit
 warning('off')
 tic
 %% Load data
-load('LBE_BGC_POC_2010_2022_08-May-2024.mat');
-load('LB_GlobColour_PP_2010_2024_15-Apr-2024.mat');
+% load('LBE_BGC_POC_2010_2022_08-May-2024.mat');
+load('LBE_BGC_POC_2010_2022_A_06-Feb-2025.mat');
+% load('LB_GlobColour_PP_2010_2024_15-Apr-2024.mat');
+load('LB_CCI_CHL_2010_2022_27-Dec-2024.mat');
 load('LBE_locations.mat');
 
 %%
@@ -101,8 +103,8 @@ for i = 3:length(dates)-4 %628 starts 2019
 
     % % % % Primary Production
     ind_pp=find(Mn==month(time)&Yr==year(time));
-    m_pcolor(Plg,Plt,log10(PP{ind_pp})'); shading flat
-    caxis([log10(100) log10(5000)]);
+    m_pcolor(Plg,Plt,log10(CHL{ind_pp})'); shading flat
+    caxis([log10(0.1) log10(20)]);
 
     m_gshhs_l('patch',[.9 0.95 .9]);
     m_grid('box','fancy','fontsize',fs,'linestyle','none');
@@ -290,7 +292,7 @@ c.Position(2)=0.05;
         
         end
     end
-print(['Figures/animation/NorBGCArgoAnimation_' num2str(i,'%04.f') '.jpeg'],'-djpeg','-r200');
+print(['Figures/animation/NorBGCArgoAnimation_CHL_' num2str(i,'%04.f') '.jpeg'],'-djpeg','-r200');
 close all
 end
 
@@ -301,7 +303,7 @@ end
     %     exportgraphics(hf1,['Figures/OSM24_LB_Map.pdf'],'ContentType','vector');
 %% make video
 addpath(genpath('Figures'))
-v = VideoWriter('NorBGCArgoAnimation_PP_2022','MPEG-4');
+v = VideoWriter('NorBGCArgoAnimation_CHL_2022','MPEG-4');
 v.Quality=100;
 v.FrameRate=16;
 
@@ -354,8 +356,8 @@ LONLIMS=[-20 25];
 
 m_proj('lambert','long',LONLIMS,'lat',LATLIMS);
 
-m_pcolor(Plg,Plt,log10(PP{ind_pp})'); shading flat
-caxis([log10(100) log10(5000)]);
+m_pcolor(Plg,Plt,log10(CHL{ind_pp})'); shading flat
+caxis([log10(0.1) log10(20)]);
 
 m_gshhs_l('patch',[.9 0.95 .9]);
 m_grid('box','fancy','fontsize',fs,'linestyle','none');
@@ -363,19 +365,20 @@ colormap(flip(m_colmap('green',256))); % chla
 
 
 h=colorbar;
-set(get(h,'ylabel'),'String','PP [mg C m^{-2} d^{-1}]');
+% set(get(h,'ylabel'),'String','PP [mg C m^{-2} d^{-1}]');
+set(get(h,'ylabel'),'String','Chla [mg m^{-3}]');
 h.Location='eastoutside';
 set(h,'tickdir','out');
 % h.Ticks=[log10(100) log10(1000) log10(5000)];
 % h.TickLabels={'100','1000','5000'};
 
-h.Ticks=[log10(100) log10(5000)];
-h.TickLabels={'100','5000'};
+h.Ticks=[log10(0.1) log10(1) log10(10) log10(20)];
+h.TickLabels={'0.1','1','10','20'};
 
 ms=m_plot(0,70,'lines','none','marker','o','markerfacecolor','none','markeredgecolor',[0.5 0.5 0.6],'markersize',6);
 ml=m_plot(10,70,'lines','none','marker','o','markerfacecolor','none','markeredgecolor',[0.5 0.5 0.6],'markersize',11);
 
-[hl,lines]=legendflex([ms,ml],{'Low iPOC','High iPOC'}, 'ref', gca, ...
+[hl,lines]=legendflex([ms,ml],{'Low iPOC^{TZ}','High iPOC^{TZ}'}, 'ref', gca, ...
     'anchor', {'n', 'n'}, 'buffer', [0 -30], 'xscale', 1, 'ncol',1,'nrow',2, ...
     'box', 'off', 'FontSize', fs-1);
-print(['Figures/NorBGCArgoAnimation_PPLegend.jpeg'],'-djpeg','-r600')
+print(['Figures/NorBGCArgoAnimation_CHLLegend.jpeg'],'-djpeg','-r600')

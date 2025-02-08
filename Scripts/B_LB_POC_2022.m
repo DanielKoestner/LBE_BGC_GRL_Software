@@ -4,8 +4,6 @@ close all
 clear all
 curdir=cd;
 
-curdir=cd;
-
 addpath(genpath([curdir '/Scripts']))
 addpath(genpath([curdir '/Data']))
 addpath(genpath([curdir '/OneArgo']))
@@ -66,6 +64,7 @@ for i = 1:f
     end
 
     floats{i}.mld=temp.MLD_DENS(:,inds);
+%     floats{i}.mld(floats{i}.mld>900)=NaN; % add jan 9 2025
     clear temp
 
     temp=eval(['LB_chl.',char(names{i})]);
@@ -123,7 +122,7 @@ for i = 1:length(floats)
         vmr_100(1,ii)=nanmedian(tvmr(tz_out>-100));
         clear tvmr tz_out
     end
-    floats{i}.vmr_100=vmr_100*1e6;
+    floats{i}.vmr_100=vmr_100*1e6; % correct
 clear vmr_100;
 end
 
@@ -219,9 +218,13 @@ for fn = 1:length(lb)
         ind0=find(p>mxp*peu,1,'last');
         par0(1,i)=mxp;
         if ~isempty(ind0)
-           ezd(1,i)=z(ind0); % first pass at ezd;
+           ezd_p(1,i)=z(ind0); % first pass at ezd;
         else
-            ezd(1,i)=NaN;
+            ezd_p(1,i)=NaN;
+        end
+
+        if ezd_p(1,i)>200
+            ezd_p(1,i)=NaN;
         end
         clear ind0 mxp
 
@@ -234,18 +237,32 @@ for fn = 1:length(lb)
         else
             ezd_iso(1,i)=NaN;
         end
+
+        if ezd_iso(1,i)>200
+            ezd_iso(1,i)=NaN;
+        end
+
         clear ind0 mxp dl
 
         % Chla EZD
         c=cs+cl;
-        thrs=0.1*max(c);
+        thrs=0.1*max(c(z<100)); %ensure max c value is for upper water column
+        if ~isempty(thrs)
         indz=find(c>thrs,1,'last');
+        else
+            indz=find(c>nan);
+        end
+
         if ~isempty(indz)
             ezd_c(1,i)=z(indz);
         else
             ezd_c(1,i)=NaN;
         end
+        if ezd_c(1,i)>200
+            ezd_c(1,i)=NaN;
+        end
 
+        ezd(1,i)=max([ezd_c(1,i),ezd_p(1,i),ezd_iso(1,i)]);
 
         [POCs(:,i),PIs{i}]=Koest23_modelB_700p(bbps(:,i),chlas(:,i),0.9);
         [POCl(:,i),PIl{i}]=Koest23_modelB_700p(bbpl(:,i),chlal(:,i),0.9);
@@ -269,6 +286,7 @@ for fn = 1:length(lb)
 
     lb{fn}.ezd=ezd;
     lb{fn}.par0=par0;
+    lb{fn}.ezd_p=ezd_p;
     lb{fn}.ezd_c=ezd_c;
     lb{fn}.ezd_iso=ezd_iso;
     
@@ -281,7 +299,7 @@ end
 
 poclims=[1 200];
 
-thrs=0.8; %if over 80% values in profile are nan, exclude
+thrs=0.702; %if over 80% values in profile are nan, exclude
 
 % Calculate iPOC
 % fixed depth epi (<200 m) vs meso (>200)
@@ -290,29 +308,23 @@ thrs=0.8; %if over 80% values in profile are nan, exclude
 
 z=lb{1}.zbin.z';
 for i = 1:length(lb)
-    for ii = 1:length(lb{i}.dnum);
+    for ii = 1:length(lb{i}.dnum)
 
-        pocs=lb{i}.zbin.poc_s(z<900,ii);
-        pocl=lb{i}.zbin.poc_l(z<900,ii);
+        pocs=lb{i}.zbin.poc_s(:,ii);
+        pocl=lb{i}.zbin.poc_l(:,ii);
         pocl(isnan(pocl))=0;
         poc=pocs+pocl;
-        
-        ezd=lb{i}.ezd(:,ii); % par based
-        ezd2=lb{i}.ezd_c(:,ii); % chla based
-        ezd3=lb{i}.ezd_iso(:,ii);% iso based
+
+        ezd=lb{i}.ezd(:,ii); % max of all ezd methods
         mld=lb{i}.mld(:,ii); % mld
-        ezd(ezd>200)=NaN;
-        ezd3(ezd3>200)=NaN;
-        ezd2(ezd2>200)=NaN; % due to issues with low max chla, this can be very large and unrealistic
-        ezd(ezd<0)=NaN;
-        ezd2(ezd2<0)=NaN;
-        ezd3(ezd3<0)=NaN;
-        ezd_mn=nanmean([ezd,ezd2,ezd3]);
+        %         mld(mld>900)=NaN;
 
-%         hzn(ii)=max([ezd_mn,mld]);
-        hzn(ii)=max([ezd,mld,ezd2,ezd3]);
+        %         hzn(ii)=max([ezd_mn,mld]);
+        hzn(ii)=max([ezd,mld]);
+        tmphzn=hzn(ii);
+        tmphzn(tmphzn>900)=NaN;
 
-        depth=z(z<900);
+        depth=z;
         %         pocl=lb{i}.zbin.poc_l(:,ii);
 
 
@@ -323,20 +335,20 @@ for i = 1:length(lb)
             depth=depth(~isnan(poc));
             poc=poc(~isnan(poc));
 
-            indme2=depth>=hzn(ii)+200&depth<900;
+            indme2=depth>=tmphzn+200;
             if sum(indme2)>1
             mesopelagic200_poc(ii)=trapz(depth(indme2),poc(indme2));
             else
                 mesopelagic200_poc(ii)=NaN;
             end
 
-            indme=depth>=hzn(ii)&depth<900;
+            indme=depth>=tmphzn;
             if sum(indme)>1
                 mesopelagic_poc(ii)=trapz(depth(indme),poc(indme));
             else
                 mesopelagic_poc(ii)=NaN;
             end
-            indep=depth<hzn(ii);
+            indep=depth<tmphzn;
             if sum(indep)>1
                 epipelagic_poc(ii)=trapz(depth(indep),poc(indep));
             else
@@ -348,7 +360,7 @@ for i = 1:length(lb)
             epipelagic_poc(ii)=NaN;
 
         end
-        clear poc 
+        clear poc tmphzn
     end
 
     lb{i}.ipoc_epi=epipelagic_poc;

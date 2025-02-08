@@ -14,10 +14,11 @@ addpath(genpath([curdir '/Data']))
 
 addpath(genpath([curdir '/aux']))
 
-print_flag=1;
+print_flag=0;
 
 % size flag, 0 for total, 1 for small, 2 for large
 size_flag=0;
+scale_flag='A'; % A for 1.5r and B for 2r scaling of LBEZ
 
 
 fs=17;
@@ -52,7 +53,10 @@ colorsm=[c(9:12,:); c(1:8,:)];
 warning off
 %% load data
 
-load('LBE_BGC_POC_2010_2022_MonthlyParameters_04-Aug-2024_200.mat')
+% load('LBE_BGC_POC_2010_2022_MonthlyParameters_04-Aug-2024_200.mat')
+% load('LBE_BGC_POC_2010_2022_MonthlyParameters_B_31-Dec-2024_200.mat'); % July 30 used 200 m, and trap integration
+load(['LBE_BGC_POC_2010_2022_MonthlyParameters_' scale_flag '_06-Feb-2025_200.mat']); % July 30 used 200 m, and trap integration
+
 
 colors=crameri('davos',7);
 
@@ -240,15 +244,15 @@ plot([6.5 6.5],[0 20],'--','color',[0.4 0.4 0.4],'linewidth',0.9)
 plot([9.5 9.5],[0 20],'--','color',[0.4 0.4 0.4],'linewidth',0.9)
 
 
-pgon=polyshape([0 0 12.5 12.5],[0.9 0 0 0.9]);
+pgon=polyshape([0 0 12.5 12.5],[0.95 0 0 0.95]);
 pg=plot(pgon);
 pg.FaceColor=[0.6 0.6 0.6];
 pg.EdgeColor='none';
 
-pgon=polyshape([0 0 12.5 12.5],[0.5 0 0 0.5]);
-pg=plot(pgon);
-pg.FaceColor=[0.4 0.4 0.4];
-pg.EdgeColor='none';
+% pgon=polyshape([0 0 12.5 12.5],[0.5 0 0 0.5]);
+% pg=plot(pgon);
+% pg.FaceColor=[0.4 0.4 0.4];
+% pg.EdgeColor='none';
 
 set(gca,'YMinorTick','on')
 grid on
@@ -275,9 +279,20 @@ for i = 1:12
     out_tz{i}=ipoc_sub2s_all{i}./ipoc_sub2s_l_all{i};
 end
 
-tmp=out_pz{1};
-tmp(tmp==Inf)=NaN;
-out_pz{1}=tmp;
+% tmp=out_pz{1};
+% tmp(tmp==Inf)=NaN;
+% out_pz{1}=tmp;
+
+for i = 1:12
+    tmp=in_pz{i};
+    tmp(tmp>100)=NaN;
+    in_pz{i}=tmp;
+
+    tmp=out_pz{i};
+    tmp(tmp>100)=NaN;
+    out_pz{i}=tmp;
+
+end
 
 hf2=figure();
 set(hf2,'Units','inches','Position', [5 5 8 3.5], 'PaperPosition', [0 0 8 3.5], 'PaperSize', [8 3.5]);
@@ -303,7 +318,11 @@ xlabel('\it s \rm: \it l \rm outside LBEZ')
 ylabel('\it s \rm: \it l \rm inside LBEZ')
 
 for i = 1:12
-    errorbar(nanmean(out_pz{i}),nanmean(in_pz{i}),nanstd(in_pz{i}),nanstd(in_pz{i}),nanstd(out_pz{i}),nanstd(out_pz{i}),'color',colorsm(i,:),'CapSize',0)
+    [~,~,in_ci,~]=ttest(in_pz{i});
+    [~,~,out_ci,~]=ttest(out_pz{i});
+
+    errorbar(nanmean(out_pz{i}),nanmean(in_pz{i}),diff(in_ci)/2,diff(in_ci)/2,diff(out_ci)/2,diff(out_ci)/2,'color',colorsm(i,:),'CapSize',0)
+    clearvars in_ci out_ci
 end
 
 for i = 1:12
@@ -337,7 +356,11 @@ plot(lims(1):lims(end),lims(1):lims(end),'k:')
 xlabel('\it s \rm: \it l \rm outside LBEZ')
 
 for i = 1:12
-    errorbar(nanmean(out_tz{i}),nanmean(in_tz{i}),nanstd(in_tz{i}),nanstd(in_tz{i}),nanstd(out_tz{i}),nanstd(out_tz{i}),'color',colorsm(i,:),'CapSize',0)
+    [~,~,in_ci,~]=ttest(in_tz{i});
+    [~,~,out_ci,~]=ttest(out_tz{i});
+
+    errorbar(nanmean(out_tz{i}),nanmean(in_tz{i}),diff(in_ci)/2,diff(in_ci)/2,diff(out_ci)/2,diff(out_ci)/2,'color',colorsm(i,:),'CapSize',0)
+    clearvars in_ci out_ci
 end
 
 for i = 1:12
@@ -345,6 +368,18 @@ for i = 1:12
 end
 
 
+s1(1)=scatter(10,10,(1000/10000)*150,'o','markeredgecolor',[0.5 0.5 0.5]);
+s1(2)=scatter(100,100,(10000/10000)*150,'o','markeredgecolor',[0.5 0.5 0.5]);
+
+[hl,lines]=legendflex([s1(1) s1(2)],[{'1 g m^{-2}','10 g m^{-2}'}], 'ref', gca, ...
+'anchor', {'se', 'se'}, 'buffer', [0 50], 'xscale', 0.5, 'ncol',1,'nrow',2, ...
+'box', 'off', 'FontSize', fs-1);
+
+tmp=findobj(hl, 'type', 'patch');
+tmp(2).MarkerSize=sqrt(15/pi)*2;
+tmp(1).MarkerSize=sqrt(150/pi)*2;
+
+text(0.745,0.3,'iPOC','units','normalized','fontsize',fs-1)
 axes(ha2(3))
 text(0.04,0.96,'(c)','units','normalized','fontsize',fs-3)
 set(gca,'ticklength',[0.02 0.02])
@@ -365,12 +400,19 @@ plot(lims(1):lims(end),lims(1):lims(end),'k:')
 xlabel('\it s \rm: \it l \rm outside LBEZ')
 
 for i = 1:12
-    errorbar(nanmean(out_t{i}),nanmean(in_t{i}),nanstd(in_t{i}),nanstd(in_t{i}),nanstd(out_t{i}),nanstd(out_t{i}),'color',colorsm(i,:),'CapSize',0)
+    [~,~,in_ci,~]=ttest(in_t{i});
+    [~,~,out_ci,~]=ttest(out_t{i});
+
+    errorbar(nanmean(out_t{i}),nanmean(in_t{i}),diff(in_ci)/2,diff(in_ci)/2,diff(out_ci)/2,diff(out_ci)/2,'color',colorsm(i,:),'CapSize',0)
+    clearvars in_ci out_ci
 end
 
 for i = 1:12
     s(i)=scatter(nanmean(out_t{i}),nanmean(in_t{i}),((ipoc_tots(i,1)+ipoc_tots_l(i,1))./10000)*150,colorsm(i,:),'filled','markeredgecolor',[0.5 0.5 0.5],'markerfacealpha',0.8); 
 end
+
+
+
 %% print
 
 if print_flag==1
@@ -378,14 +420,14 @@ if print_flag==1
     figure(hf1)
 
     if size_flag==0
-        print('Figures/V4/SI/LB22_iPOC_Violins_Total','-dpdf','-r800')
+        print(['Figures/V8/SI/LB22_iPOC_Violins_Total_' scale_flag],'-dpdf','-r800')
     elseif size_flag==1
-        print('Figures/V4/SI/LB22_iPOC_Violins_Small','-dpdf','-r800')
+        print(['Figures/V8/SI/LB22_iPOC_Violins_Small_' scale_flag],'-dpdf','-r800')
     elseif size_flag==2
-        print('Figures/V4/SI/LB22_iPOC_Violins_Large','-dpdf','-r800')
+        print(['Figures/V8/SI/LB22_iPOC_Violins_Large_' scale_flag],'-dpdf','-r800')
     end
 
     figure(hf2)
-    print('Figures/V4/SI/LB22_iPOC_SizeRatios_INvOUT','-dpdf','-r800')
+    print(['Figures/V8/SI/LB22_iPOC_SizeRatios_INvOUT_' scale_flag],'-dpdf','-r800')
 end
 

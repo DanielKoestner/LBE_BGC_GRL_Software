@@ -1,15 +1,18 @@
 % script to sort data and remake an "lb" and "lbe" clear all
 
-% copy lb and lbe, float index by float index, then reset data for each
-% eddy_id
-
 clear all
 close all
 
+curdir=cd;
+addpath(genpath([curdir '/Data']))
+addpath(genpath([curdir '/Scripts']))
 save_flag=1;
 
 % load('LBE_BGC_POC_2010_2022_07-Jun-2024.mat')
-load('LBE_BGC_POC_2010_2022_22-Jul-2024.mat') %w/ vmr
+% load('LBE_BGC_POC_2010_2022_22-Jul-2024.mat','lb')
+load('LBE_BGC_POC_2010_2022_06-Feb-2025.mat','lb')
+
+sf=1.5; % scaling factor for eddy radius
 
 out=lb;
 in=lb;
@@ -23,7 +26,7 @@ for flt=1:length(lb)
         argo_lon=lb{flt}.lon(i);
         argo_date=lb{flt}.dnum(i);
 
-        [eddy_id(i)]=in_eddy(argo_date,argo_lat,argo_lon,'LBE_locations.mat');
+        [eddy_id(i),rel_loc(:,i),speed(i)]=in_eddy(argo_date,argo_lat,argo_lon,'LBE_locations.mat',sf);
         clear argo*
     end
 
@@ -31,18 +34,22 @@ for flt=1:length(lb)
     fields=fieldnames(lb{flt});
 
     % write only outside eddy data
+    out{flt}.relative_location=rel_loc(:,eddy_id==0);
+    out{flt}.lbe_speed=speed(eddy_id==0);
     out{flt}.bbp700=lb{flt}.bbp700(:,eddy_id==0);
     out{flt}.bbp700_s=lb{flt}.bbp700_s(:,eddy_id==0);
     out{flt}.bbp700_l=lb{flt}.bbp700_l(:,eddy_id==0);
     if sum(ismember('par',fields))>0
         out{flt}.par=lb{flt}.par(:,eddy_id==0);
-        out{flt}.ezd=lb{flt}.ezd(:,eddy_id==0);
+        out{flt}.ezd_p=lb{flt}.ezd_p(:,eddy_id==0);
         out{flt}.par0=lb{flt}.par0(:,eddy_id==0);
+        out{flt}.ezd_iso=lb{flt}.ezd_iso(:,eddy_id==0);
     end
     out{flt}.t=lb{flt}.t(:,eddy_id==0);
     out{flt}.s=lb{flt}.s(:,eddy_id==0);
     out{flt}.mld=lb{flt}.mld(:,eddy_id==0);
     out{flt}.ezd_c=lb{flt}.ezd_c(:,eddy_id==0);
+    out{flt}.ezd=lb{flt}.ezd(:,eddy_id==0);
     out{flt}.zprod=lb{flt}.zprod(:,eddy_id==0);
     out{flt}.vmr_100=lb{flt}.vmr_100(:,eddy_id==0);
     out{flt}.chla=lb{flt}.chla(:,eddy_id==0);
@@ -82,19 +89,22 @@ for flt=1:length(lb)
 
     % write only inside eddy data
     if sum(eddy_id)>1
-
+        in{flt}.relative_location=rel_loc(:,eddy_id==1);
+        in{flt}.lbe_speed=speed(eddy_id==1);
         in{flt}.bbp700=lb{flt}.bbp700(:,eddy_id==1);
         in{flt}.bbp700_s=lb{flt}.bbp700_s(:,eddy_id==1);
         in{flt}.bbp700_l=lb{flt}.bbp700_l(:,eddy_id==1);
         if sum(ismember('par',fields))>0
             in{flt}.par=lb{flt}.par(:,eddy_id==1);
-            in{flt}.ezd=lb{flt}.ezd(:,eddy_id==1);
+            in{flt}.ezd_p=lb{flt}.ezd_p(:,eddy_id==1);
+            in{flt}.ezd_iso=lb{flt}.ezd_iso(:,eddy_id==1);
             in{flt}.par0=lb{flt}.par0(:,eddy_id==1);
         end
         in{flt}.t=lb{flt}.t(:,eddy_id==1);
         in{flt}.s=lb{flt}.s(:,eddy_id==1);
         in{flt}.mld=lb{flt}.mld(:,eddy_id==1);
         in{flt}.ezd_c=lb{flt}.ezd_c(:,eddy_id==1);
+        in{flt}.ezd=lb{flt}.ezd(:,eddy_id==1);
         in{flt}.zprod=lb{flt}.zprod(:,eddy_id==1);
         in{flt}.vmr_100=lb{flt}.vmr_100(:,eddy_id==1);
         in{flt}.chla=lb{flt}.chla(:,eddy_id==1);
@@ -149,5 +159,9 @@ in=in2;
 
 %%
 if save_flag==1
-    save(['Data/LBE_BGC_POC_2010_2022_' date '.mat'],'lb','out','in')
+    if sf==1.5
+        save(['Data/LBE_BGC_POC_2010_2022_A_' date '.mat'],'lb','out','in','sf')
+    elseif sf==2
+        save(['Data/LBE_BGC_POC_2010_2022_B_' date '.mat'],'lb','out','in','sf')
+    end
 end

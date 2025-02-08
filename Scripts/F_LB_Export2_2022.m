@@ -42,6 +42,9 @@ addpath(genpath([curdir '/aux']))
 
 print_flag=0;
 save_flag=0;
+size_flag=0; %0 for total, 1 for small particles
+scale_flag='A'; % A for 1.5r and B for 2r scaling of LBEZ
+
 fs=15;
 lw=1.5;
 set(0, 'DefaultAxesFontName', 'Times');
@@ -72,7 +75,11 @@ c=crameri('roma',12);
 colorsm=[c(9:12,:); c(1:8,:)];
 %% Try with profile by profile calculated iPOCsub
 
-load('LBE_BGC_POC_2010_2022_MonthlyParameters_04-Aug-2024_200.mat'); % July 30 used 200 m, and trap integration
+% load('LBE_BGC_POC_2010_2022_MonthlyParameters_B_31-Dec-2024_200.mat'); % July 30 used 200 m, and trap integration
+% load('LBE_BGC_POC_2010_2022_MonthlyParameters_04-Aug-2024_200.mat')
+
+load(['LBE_BGC_POC_2010_2022_MonthlyParameters_' scale_flag '_05-Jan-2025_200.mat']); 
+
 
 %1 for mean, 2 for std, 3 for median, 4 for iqr
 a=1;
@@ -281,41 +288,56 @@ TE_l_out=Ez2_l_out./Ez_l_out;
 
 
 %% Deepest depth horizon
-
-load('LBE_BGC_POC_2010_2022_MonthlyParameters_04-Aug-2024_500.mat')
+% load('LBE_BGC_POC_2010_2022_MonthlyParameters_04-Aug-2024_500.mat')
+load(['LBE_BGC_POC_2010_2022_MonthlyParameters_' scale_flag '_05-Jan-2025_500.mat']); 
 
 %1 for mean, 2 for std, 3 for median, 4 for iqr
 a=1;
 b=2;
 % % % % % IN
+iPOCs_tz_in_deep=ipoc_subs(:,a);
+iPOCs_tz2_in_deep=ipoc_subbs(:,a);
 iPOC_tz_in_deep=ipoc_subs(:,a)+ipoc_subs_l(:,a);
 iPOC_tz2_in_deep=ipoc_subbs(:,a)+ipoc_subbs_l(:,a);
 
 %a=3;
 % % % % % OUT
+iPOCs_tz_out_deep=ipoc_sub2s(:,a);
+iPOCs_tz2_out_deep=ipoc_subb2s(:,a);
 iPOC_tz_out_deep=ipoc_sub2s(:,a)+ipoc_sub2s_l(:,a);
 iPOC_tz2_out_deep=ipoc_subb2s(:,a)+ipoc_subb2s_l(:,a);
 
 for i = 1:12
     if i <12
         % in
+        Ez_s_in_deep(i)= (iPOCs_tz_in_deep(i+1)-iPOCs_tz_in_deep(i))/dt(i);
+        Ez2_s_in_deep(i)= (iPOCs_tz2_in_deep(i+1)-iPOCs_tz2_in_deep(i))/dt(i);
         Ez_in_deep(i)= (iPOC_tz_in_deep(i+1)-iPOC_tz_in_deep(i))/dt(i);
         Ez2_in_deep(i)= (iPOC_tz2_in_deep(i+1)-iPOC_tz2_in_deep(i))/dt(i);
 
         % out
+        Ez_s_out_deep(i)= (iPOCs_tz_out_deep(i+1)-iPOCs_tz_out_deep(i))/dt(i);
+        Ez2_s_out_deep(i)= (iPOCs_tz2_out_deep(i+1)-iPOCs_tz2_out_deep(i))/dt(i);
         Ez_out_deep(i)= (iPOC_tz_out_deep(i+1)-iPOC_tz_out_deep(i))/dt(i);
         Ez2_out_deep(i)= (iPOC_tz2_out_deep(i+1)-iPOC_tz2_out_deep(i))/dt(i);
 
     else
 % in
+        Ez_s_in_deep(i)= (iPOCs_tz_in_deep(1)-iPOCs_tz_in_deep(i))/dt(i);
+        Ez2_s_in_deep(i)= (iPOCs_tz2_in_deep(1)-iPOCs_tz2_in_deep(i))/dt(i);
         Ez_in_deep(i)= (iPOC_tz_in_deep(1)-iPOC_tz_in_deep(i))/dt(i);
         Ez2_in_deep(i)= (iPOC_tz2_in_deep(1)-iPOC_tz2_in_deep(i))/dt(i);
 % out
+        Ez_s_out_deep(i)= (iPOCs_tz_out_deep(1)-iPOCs_tz_out_deep(i))/dt(i);
+        Ez2_s_out_deep(i)= (iPOCs_tz2_out_deep(1)-iPOCs_tz2_out_deep(i))/dt(i);
         Ez_out_deep(i)= (iPOC_tz_out_deep(1)-iPOC_tz_out_deep(i))/dt(i);
         Ez2_out_deep(i)= (iPOC_tz2_out_deep(1)-iPOC_tz2_out_deep(i))/dt(i);
 
     end
 end
+
+TE_s_in_deep=Ez2_s_in_deep./Ez_s_in_deep;
+TE_s_out_deep=Ez2_s_out_deep./Ez_s_out_deep;
 
 TE_in_deep=Ez2_in_deep./Ez_in_deep;
 TE_out_deep=Ez2_out_deep./Ez_out_deep;
@@ -323,6 +345,25 @@ TE_out_deep=Ez2_out_deep./Ez_out_deep;
 
 
 %% Plot
+
+% reset variables for plotting for smal particles if desired.
+if size_flag==1
+    Ez2_in=Ez2_s_in;
+    Ez_in=Ez_s_in;
+    P_in=P_s_in;
+    TE_in=TE_s_in;
+    TE_in_deep=TE_s_in_deep;
+    iPOC_tz_in=iPOCs_tz_in;
+
+
+    Ez2_out=Ez2_s_out;
+    Ez_out=Ez_s_out;
+    P_out=P_s_out;
+    TE_out=TE_s_out;
+    TE_out_deep=TE_s_out_deep;
+    iPOC_tz_out=iPOCs_tz_out;
+
+end
 
 colors=crameri('davos',7);
 % colp=[0.4 0.75 0.4];
@@ -459,12 +500,12 @@ p2=plot(8:11,TE_out(8:11),'color',colors2(3,:),'linewidth',0.75,'marker','s','Ma
 % for i = 1:12
 %     errorbar(i,TE_out(i),TE_out_err(1,i)-TE_out(i),TE_out(i)-TE_out_err(2,i),'color',colors2(3,:),'CapSize',1,'markersize',0.1,'linewidth',0.25)
 % end
-scatter(1:6,TE_out(1:6),iPOC_tz_out(1:6)/115,'s','filled','MarkerFaceColor',colors2(3,:),'MarkerFaceAlpha',0.9);
-scatter(8:11,TE_out(8:11),iPOC_tz_out(8:11)/115,'s','filled','MarkerFaceColor',colors2(3,:),'MarkerFaceAlpha',0.9);
 
 coldeep=brighten(colors2(3,:),0.65);
 plot(1:6,TE_out_deep(1:6),'color',coldeep,'linewidth',0.1);
 plot(8:11,TE_out_deep(8:11),'color',coldeep,'linewidth',0.1);
+scatter(1:6,TE_out(1:6),iPOC_tz_out(1:6)/115,'s','filled','MarkerFaceColor',colors2(3,:),'MarkerEdgeColor',[0.4 0.4 0.4],'MarkerFaceAlpha',0.9);
+scatter(8:11,TE_out(8:11),iPOC_tz_out(8:11)/115,'s','filled','MarkerFaceColor',colors2(3,:),'MarkerEdgeColor',[0.4 0.4 0.4],'MarkerFaceAlpha',0.9);
 
 x=1:12;
 y=TE_in; % set to shallowest depth horizon (100 or 200)
@@ -486,7 +527,7 @@ plot(1:12,TE_in_deep,'color',coldeep,'linewidth',0.1);
 %     errorbar(i,TE_in(i),TE_in_err(1,i)-TE_in(i),TE_in(i)-TE_in_err(2,i),'color',colors2(7,:),'CapSize',0,'markersize',0.1,'linewidth',0.25)
 % end
 
-scatter(1:12,TE_in,iPOC_tz_in/115,'o','filled','MarkerFaceColor',colors2(7,:),'MarkerFaceAlpha',0.9);
+scatter(1:12,TE_in,iPOC_tz_in/115,'o','filled','MarkerFaceColor',colors2(7,:),'MarkerEdgeColor',[0.7 0.7 0.7],'MarkerFaceAlpha',0.9);
 
 set(gca,'ticklength',[0.01 0.005])
 box on
@@ -513,5 +554,9 @@ lines(6).MarkerSize=4;
 %% print
 
 if print_flag==1
-    print('Figures/V4/5_LB22_MonthlyExport_200_500','-dpdf','-r800')
+    if size_flag==0
+    print(['Figures/V5/5_LB22_MonthlyExport_200_500_' scale_flag],'-dpdf','-r800')
+    elseif size_flag==1
+    print(['Figures/V5/5_LB22_MonthlyExport_200_500_' scale_flag '_small'],'-dpdf','-r800')
+    end    
 end
